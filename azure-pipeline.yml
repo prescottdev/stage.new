@@ -1,0 +1,41 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    version: '3.1.x'
+    packageType: 'sdk'
+
+- script: |
+    dotnet restore
+  displayName: 'dotnet restore'
+
+- script: |
+    dotnet build --configuration $(buildConfiguration)
+  displayName: 'dotnet build'
+
+- script: |
+    dotnet test --configuration $(buildConfiguration) --logger "trx;LogFileName=test_results.trx"
+  displayName: 'dotnet test'
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/*.trx'
+
+- script: |
+    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'dotnet publish'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
